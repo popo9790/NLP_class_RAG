@@ -1,0 +1,1738 @@
+[
+  {
+    "type": "header",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 1
+  },
+  {
+    "type": "header",
+    "content": "JetMoE: Reaching Llama2 Performance with 0.1M Dollars",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 2
+  },
+  {
+    "type": "text",
+    "content": "Yikang Shen *",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 3
+  },
+  {
+    "type": "text",
+    "content": "MIT-IBM Watson AI Lab",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 4
+  },
+  {
+    "type": "text",
+    "content": "yikang.shn@gmail.com",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 5
+  },
+  {
+    "type": "text",
+    "content": "Tianle Cai",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 6
+  },
+  {
+    "type": "text",
+    "content": "Princeton University",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 7
+  },
+  {
+    "type": "text",
+    "content": "tianle.cai@princeton.edu",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 8
+  },
+  {
+    "type": "text",
+    "content": "Zhen Guo*",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 9
+  },
+  {
+    "type": "text",
+    "content": "MIT EECS",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 10
+  },
+  {
+    "type": "text",
+    "content": "zguo0525@mit.edu",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 11
+  },
+  {
+    "type": "text",
+    "content": "Zengyi Qin",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 12
+  },
+  {
+    "type": "text",
+    "content": "MyShell.ai & MIT",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 13
+  },
+  {
+    "type": "text",
+    "content": "qinzy@mit.edu",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 14
+  },
+  {
+    "type": "header",
+    "content": "Abstract",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 15
+  },
+  {
+    "type": "text",
+    "content": "Large Language Models (LLMs) have achieved remarkable results, but their increasing resource demand has become a major obstacle to the devel- opment of powerful and accessible super-human intelligence. This report introduces JetMoE-8B, a new LLM trained with less than $0.1 million, using 1.25T tokens from carefully mixed open-source corpora and 30,000 H100 GPU hours. Despite its low cost, the JetMoE-8B demonstrates impressive performance, with JetMoE-8B outperforming the Llama2-7B model and JetMoE-8B-Chat surpassing the Llama2-13B-Chat model. These results suggest that LLM training can be much more cost-effective than gener- ally thought. JetMoE-8B is based on an efficient Sparsely-gated Mixture- of-Experts (SMOE) architecture, composed of attention and feedforward experts. Both layers are sparsely activated, allowing JetMoE-8B to have 8B parameters while only activating 2B for each input token, reducing inference computation by about 70% compared to Llama2-7B. Moreover, JetMoE-8B is highly open and academia-friendly, using only public datasets and training code. All training parameters and data mixtures have been detailed in this report to facilitate future efforts in the development of open foundation models. This transparency aims to encourage collaboration and further advancements in the field of accessible and efficient LLMs. The mod- els are publicly available at https://github.com/myshell-ai/JetMoE.",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 16
+  },
+  {
+    "type": "header",
+    "content": "1 Introduction",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 17
+  },
+  {
+    "type": "text",
+    "content": "Large Language Models (LLMs) have achieved remarkable results, but their increasing resource demand has become a major obstacle to developing powerful and accessible AI. Although modern LLMs have surpassed human performance on some tasks, they remain inefficient and inflexible. Most LLMs (e.g., Llama, Touvron et al. 2023; Pythia, Biderman et al. 2023; GPT-3, Brown et al. 2020; Mistral, Jiang et al. 2023) use all of their parameters during inference and training, which are referred to as dense models. Considering the substantial costs, the Mixture-of-Experts (MoE) architecture (Yuksel et al., 2012; Shazeer et al., 2017; Du et al., 2022; Pan et al., 2024) has emerged as a popular solution, enabling parameter scaling while keeping computational costs modest. Recent applications of MoE architectures in Transformers (Vaswani et al., 2017) have yielded successful attempts at scaling language models to a substantial size, accompanied by remarkable performance, such as Deepseek MoE (Dai et al., 2024), Mixtral 8x7B (Jiang et al., 2024), Grok-1 (xai-org, 2024), and DBRX (Databricks, 2024). However, even though these models achieve excellent performance, they are not truly open-sourced as the training recipes are not published and may contain proprietary datasets inaccessible outside of large corporations. The open-source community has also attempted to train MoE models, such as OpenMoE (Xue et al., 2024), but its performance is only on par with weak dense models with similar activation parameters, such as OpenLLaMA (Geng & Liu, 2023) and TinyLLaMA (Zhang et al., 2024a).",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 18
+  },
+  {
+    "type": "text",
+    "content": "*Equal contribution.",
+    "doc_id": "shen2024",
+    "page": 1,
+    "id": 19
+  },
+  {
+    "type": "figure",
+    "caption": "Figure 1: JetMoE architecture",
+    "content": "The figure illustrates the JetMoE architecture. It contains MLP layers represented by boxes labeled MLP 1, MLP 2, MLP 3, and MLP 4. These layers are connected to a 'Router' component, which is followed by a 'Layer Norm' block. Below this, there are attention layers labeled Att 1, Att 2, Att 3, and Att 4, also connected to a 'Router', followed by another 'Layer Norm' block. The figure depicts the overall structure of the JetMoE architecture.",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 20
+  },
+  {
+    "type": "text",
+    "content": "To facilitate future efforts on open foundation models, particularly MoE models, we introduce JetMoE-8B, an innovative MoE architecture inspired by ModuleFormer (Shen et al., 2023) that extends the concept of sparse activation to both the attention and feed-forward layers. Unlike prior works that only apply sparse activation to the feed-forward layer, JetMoE-8B leverages sparse activation in both components to further reduce computational costs while maintaining performance.",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 21
+  },
+  {
+    "type": "text",
+    "content": "Impressively, JetMoE-8B is trained with a limited $100k budget, using 1.25T tokens from mixed open-source datasets and 30,000 H100 GPU hours. Despite its low cost, JetMoE-8B outperforms the Llama2-7B model, and JetMoE-8B-Chat outperforms the Llama2-13B-Chat model, demonstrating that LLM training can be much more cost-effective than generally thought. In addition, JetMoE-8B has 8B parameters while only activating 2B for each input token, reducing inference computation by about 70% compared to Llama2-7B.",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 22
+  },
+  {
+    "type": "text",
+    "content": "The key advantages of JetMoE-8B include:",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 23
+  },
+  {
+    "type": "text",
+    "content": "• Openness and academia-friendly: JetMoE-8B is trained using only public datasets and open-source training code, making it accessible to many academia research settings. The model can also be finetuned with limited compute budgets (e.g., consumer-grade GPUs).",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 24
+  },
+  {
+    "type": "text",
+    "content": "• Sparse activation on both attention and feed-forward layers, which significantly reduces training and inference costs. We also propose to share the kv projection in attention experts to improve training stability.",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 25
+  },
+  {
+    "type": "text",
+    "content": "• Comprehensive open-source data mixture, which ensures high-quality training using only open-source datasets.",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 26
+  },
+  {
+    "type": "text",
+    "content": "These innovations in JetMoE-8B pave the way for more accessible and efficient LLMs, benefiting the broader AI research community. To foster collaboration and further advancements, we have detailed all the training parameters and data mixture in this report.",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 27
+  },
+  {
+    "type": "header",
+    "content": "2 Model Architecture",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 28
+  },
+  {
+    "type": "header",
+    "content": "2.1 Mixture of Experts",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 29
+  },
+  {
+    "type": "text",
+    "content": "A Mixture of Experts (MoE) layer comprises N modules f1,..., fŊ and a router g(e | x). Given an input x to the MoE layer, the router predicts a probability distribution over the N",
+    "doc_id": "shen2024",
+    "page": 2,
+    "id": 30
+  },
+  {
+    "type": "header",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 31
+  },
+  {
+    "type": "text",
+    "content": "modules. Of these, we select the top k experts. When k < N, we are using a Sparse Mixture of Experts (SMoE, Shazeer et al. 2017). In this JetMoE, we use a linear layer to model the router",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 32
+  },
+  {
+    "type": "text",
+    "content": "s = Wrtrx,",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 33
+  },
+  {
+    "type": "text",
+    "content": "g(e | x) = { softmax (Topk (s));, si ∈ Topk (s)\nsi ∉ Topk (s)\n0,",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 34
+  },
+  {
+    "type": "text",
+    "content": "(1)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 35
+  },
+  {
+    "type": "text",
+    "content": "(2)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 36
+  },
+  {
+    "type": "text",
+    "content": "where Wrtr is the expert embedding matrix of shape (N, Demb), Topk is the operator that select the top k logits from s. The final output of the SMoE is then given by",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 37
+  },
+  {
+    "type": "text",
+    "content": "y = ∑ g(e | x) • fe(x)\ne=1",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 38
+  },
+  {
+    "type": "text",
+    "content": "(3)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 39
+  },
+  {
+    "type": "text",
+    "content": "When g(e | x) = 0, fe(x) will not need to be evaluated, thus reducing computation cost during training and inference.",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 40
+  },
+  {
+    "type": "text",
+    "content": "Following the design in ModuleFormer (Shen et al., 2023), JetMoE replaces both self- attention and Feed-forward layers (FFD) with SMoE layer. This is different from most opensource MoE models (Dai et al., 2024; Xue et al., 2024), that only replace FFD layers.",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 41
+  },
+  {
+    "type": "header",
+    "content": "2.2 FeedFoward Expert",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 42
+  },
+  {
+    "type": "text",
+    "content": "Each FFD expert is a standard 2-layer MLP with hidden state size Dffd:",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 43
+  },
+  {
+    "type": "text",
+    "content": "fmlp(x) = Wouto (Winx)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 44
+  },
+  {
+    "type": "text",
+    "content": "(4)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 45
+  },
+  {
+    "type": "text",
+    "content": "Where Wout is the output projection matrix of shape (Demb, Df fd), Win in the input projection matrix of shape (2D f fd, Demb), o is the SwiGLU activation function.",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 46
+  },
+  {
+    "type": "header",
+    "content": "2.3 Attention Expert",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 47
+  },
+  {
+    "type": "text",
+    "content": "Zhang et al. (2022) propose the Mixture of Attention heads (MoA), which extends SMOEs to attention mechanisms. We adapt MoA for our purposes, generalizing it to allow for multiple heads per expert and introducing RoPE relative positioning into the attention computation.",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 48
+  },
+  {
+    "type": "text",
+    "content": "In JetMoE, each attention expert e is composed of four IRDemb×Datt matrix: W, Wk, W, We, where Datt = H × Dhead, H is the number of attention head inside each attention experts, Dhead is the dimension of each attention head. Among these matrices, W and We are owned by each expert, but Wk and Wu are shared across experts to improve the training and inference efficiency.",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 49
+  },
+  {
+    "type": "text",
+    "content": "Given an input vector sequence x, we first projected it to key vectors k and value vectors v using the shared key and value projection matrices:",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 50
+  },
+  {
+    "type": "text",
+    "content": "k = Wxx",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 51
+  },
+  {
+    "type": "text",
+    "content": "(5)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 52
+  },
+  {
+    "type": "text",
+    "content": "V = Wox",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 53
+  },
+  {
+    "type": "text",
+    "content": "(6)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 54
+  },
+  {
+    "type": "text",
+    "content": "Inside expert e, we project x into the query vectors qe, apply standard multi-head attention with ROPE (Su et al., 2024), and project the attention output back to the input space:",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 55
+  },
+  {
+    "type": "text",
+    "content": "qe = Wax",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 56
+  },
+  {
+    "type": "text",
+    "content": "(7)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 57
+  },
+  {
+    "type": "text",
+    "content": "ae = MHA (qe, k, v)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 58
+  },
+  {
+    "type": "text",
+    "content": "(8)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 59
+  },
+  {
+    "type": "text",
+    "content": "oe = Wa",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 60
+  },
+  {
+    "type": "text",
+    "content": "(9)",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 61
+  },
+  {
+    "type": "text",
+    "content": "By introducing the MoA, we can scale up the attention layer with more attention experts while maintaining the same amount of computation. Such that the attention layer will not become a performance bottleneck, while we scale up the MLP layers.",
+    "doc_id": "shen2024",
+    "page": 3,
+    "id": 62
+  },
+  {
+    "type": "header",
+    "content": "2.4 Load Balancing during Pretraining",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 63
+  },
+  {
+    "type": "text",
+    "content": "To avoid the SMoE repeatedly using the same module and wasting the extra capacity in the other modules, it requires various load balancing losses to regulate the training of the router (Shazeer et al., 2017; Fedus et al., 2021). In the training of JetMoE, we use the frequency-based auxiliary loss introduced in Fedus et al. (2021)",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 64
+  },
+  {
+    "type": "text",
+    "content": "lossb = N ∑ fiPi",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 65
+  },
+  {
+    "type": "text",
+    "content": "where N is the number of experts, fi is the fraction of tokens dispatched to expert i, and P; is the fraction of the router probability allocated for expert i. To improve the training stability, we also use the router z-loss introduced in Zoph et al. (2022):",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 66
+  },
+  {
+    "type": "text",
+    "content": "lossz =",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 67
+  },
+  {
+    "type": "text",
+    "content": "where B is the number of tokens, x is the logits given by router. The final training loss will be the weighted sum of three losses:",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 68
+  },
+  {
+    "type": "text",
+    "content": "loss = losslm + aloss + Blossz",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 69
+  },
+  {
+    "type": "text",
+    "content": "where a is the weight for load balancing loss and ẞ is the weight for z-loss.",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 70
+  },
+  {
+    "type": "header",
+    "content": "3 Pretraining Datasets",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 71
+  },
+  {
+    "type": "header",
+    "content": "3.1 Real-world Datasets",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 72
+  },
+  {
+    "type": "text",
+    "content": "RefinedWeb is a high-quality web dataset, which contains 5 trillion tokens extracted from CommonCrawl 1 using the MacroData Refinement (MDR) pipeline to improve data qual- ity (Penedo et al., 2023). We use the 600 billion token extract of RefinedWeb publicly available.",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 73
+  },
+  {
+    "type": "text",
+    "content": "StarCoder training data is sourced from The Stack v1.2 with code from GitHub spanning 86 programming languages (Li et al., 2023b). The data is preprocessed through visual inspection, filtering, deduplication, and reweighting low-data languages. A new version of the dataset has been recently released (Lozhkov et al., 2024).",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 74
+  },
+  {
+    "type": "text",
+    "content": "Dolma is a large, open, diverse English text corpus contains 3 trillion tokens sampled from 7 sources, including web pages from Common Crawl, code from The Stack, curated web data from C4 (Raffel et al., 2020), social media conversations from Reddit, academic papers from PeS2o, public domain books from Project Gutenberg, and encyclopedic content from Wikipedia and Wikibooks (Soldaini et al., 2024).",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 75
+  },
+  {
+    "type": "text",
+    "content": "The Pile is an 825 GB open-source English text corpus for training large language mod- els (Gao et al., 2020). It includes 22 diverse, publicly available datasets such as Wikipedia, NIH exPORTER, ArXiv, Books3, BookCorpus2, OpenSubtitles, YTSubtitles, and Enron Emails.",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 76
+  },
+  {
+    "type": "header",
+    "content": "3.1.1 Miscellaneous",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 77
+  },
+  {
+    "type": "text",
+    "content": "• Proof-Pile-2 is a 55 billion token dataset of mathematical and scientific docu- ments (Azerbayev et al., 2023). We use the algebraic-stack (11B tokens) subset in- cluding numerical computing, computer algebra, and formal mathematics.",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 78
+  },
+  {
+    "type": "text",
+    "content": "• OpenWebMath is a large, high-quality, open dataset containing 14.7 billion tokens of English mathematical web text (Paster et al., 2023).",
+    "doc_id": "shen2024",
+    "page": 4,
+    "id": 79
+  },
+  {
+    "type": "header",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 80
+  },
+  {
+    "type": "text",
+    "content": "• StackMathQA is a meticulously curated collection of 2 million mathematical questions and answers, sourced from various Stack Exchange sites (Zhang, 2024).",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 81
+  },
+  {
+    "type": "text",
+    "content": "• OpenAssistant is a human-generated, human-annotated assistant-style conversation corpus in 35 different languages. The corpus is a product of a worldwide crowd- sourcing effort involving over 13,500 volunteers (LAION-AI, 2023).",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 82
+  },
+  {
+    "type": "text",
+    "content": "○ xP3x (Crosslingual Public Pool of Prompts eXtended) is a collection of prompts and datasets spanning 277 languages and 16 NLP tasks (Muennighoff et al., 2023b).",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 83
+  },
+  {
+    "type": "text",
+    "content": "• CommitPackFT is a 2GB filtered version of CommitPack to contain only high-quality commit messages on public Github repos that resemble natural language instruc- tions (Muennighoff et al., 2023a).",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 84
+  },
+  {
+    "type": "header",
+    "content": "3.2 Synthetic Datasets",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 85
+  },
+  {
+    "type": "text",
+    "content": "OpenHermes 2.5 is a large-scale, diverse, high-quality compilation of open-source and custom synthetic datasets (Teknium, 2023). It contains 1 million primarily synthetically generated instruction and chat samples, following a ShareGPT structure. The dataset is compiled from sources including Airoboros 2.2 (Durbin, 2023), CamelAI domain expert datasets (Li et al., 2023a), ChatBot Arena (GPT-4 Only) (Zheng et al., 2024a), Collective Cognition (09-11-2023) (CollectiveCognition, 2023), CoT Alpaca GPT4 (Si et al., 2023), Evol Instruct 70K and 140K (Xu et al., 2023a), Glaive Code Assistant (glaiveai, 2023), GPT4- LLM (Peng et al., 2023), GPTeacher (Teknium1, 2023), Medical Tasks (CogStack, 2023), MetaMath 40k (Yu et al., 2023), SlimOrca 550K (Longpre et al., 2023; Mukherjee et al., 2023; Lian et al., 2023), Platypus (Lee et al., 2024; Lightman et al., 2023; Wang et al., 2023b), ShareGPT (GPT4-Only) (lm sys, 2023), and Unnatural Instructions GPT4 (Peng et al., 2023).",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 86
+  },
+  {
+    "type": "text",
+    "content": "UltraTextbooks is a comprehensive collection of high-quality synthetic and human- written textbooks (Locutusque, 2024). The composition of the dataset incorporating multiple sources such as nampdn-ai/mini-peS2o, open-phi/programming_books_llama, open-phi/textbooks, nampdn-ai/tiny-strange-textbooks, and a select high-quality web collection from math-ai/AutoMathText.",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 87
+  },
+  {
+    "type": "text",
+    "content": "UltraChat 200k is a filtered subset of the UltraChat dataset, which consists of 1.4M dialogues generated by ChatGPT (Ding et al., 2023; Tunstall et al., 2023b). The subset was created by selecting a smaller portion of the data, truecasing the text to fix grammatical errors, and removing dialogues where the assistant inappropriately claims to lack emotions or opinions.",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 88
+  },
+  {
+    "type": "header",
+    "content": "3.2.1 Miscellaneous",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 89
+  },
+  {
+    "type": "text",
+    "content": "• TemplateGSM dataset is a novel and extensive collection containing over 7 mil- lion grade school math problems with code solutions and natural language solu- tions (Zhang et al., 2024b).",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 90
+  },
+  {
+    "type": "text",
+    "content": "• Magicoder-Evol-110K and Magicoder-OSS-75K datasets are generated using the OSS-INSTRUCT approach, which leverages a LLM to automatically create new coding problems by drawing inspiration from random code snippets collected from open source projects (Wei et al., 2023).",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 91
+  },
+  {
+    "type": "text",
+    "content": "• Evol-Code Alpaca is an open-sourced implementation of Evol-Instruct adapted for code instructions by streamlining, simplifying, and adding code-specific evolutionary instructions (Luo et al., 2023).",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 92
+  },
+  {
+    "type": "text",
+    "content": "• Code-290k-ShareGPT is a dataset in the ShareGPT format, consisting of approximately 290,000 sets of conversations (ajibawa 2023, 2024). Code-290k-ShareGPT is built upon the existing datasets Python-Code-23k-ShareGPT and Code-74k-ShareGPT.",
+    "doc_id": "shen2024",
+    "page": 5,
+    "id": 93
+  },
+  {
+    "type": "header",
+    "content": "4 Model Pretraining",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 94
+  },
+  {
+    "type": "header",
+    "content": "4.1 Infrastructures",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 95
+  },
+  {
+    "type": "text",
+    "content": "We use Megatron (Shoeybi et al., 2019) as the training framework and integrate Megablock (Gale et al., 2023) for MoE support. We further modified the training framework to support MoA (Section 2.3) and z-loss (Section 2.4). Against the common practice, we choose the Pipeline parallelism introduced in (Narayanan et al., 2021) instead of the expert parallelism for model parallel during training. This is mainly due to two reasons. First, Sparse MoE models usually have a narrower hidden state compared to standard transformer models. Thus, the communication cost for pipeline parallelism is smaller. Second, we use the dropless MoE schema introduced in Gale et al. (2023); Shen et al. (2023), which could cause load unbalance across experts. Thus, using expert parallel will cause an unbalanced load across devices and result in inefficient training. Pipeline parallelism could avoid this slowdown because it computes all the experts inside a layer on the same device. We conduct training on a cluster containing 12 nodes and 96 H100s. Inside each node, gpus are connected via NVLinks. Infiniband is used for fast communication between nodes.",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 96
+  },
+  {
+    "type": "header",
+    "content": "4.2 Hyper-parameters",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 97
+  },
+  {
+    "type": "table",
+    "caption": "Table 1: JetMoE-8B hyperparameters.",
+    "content": "| Ptotal | Pactive | nlayers | Dmodel | Nexperts | Top-k | nkv_heads | Dhead | Dmlp |\n|---|---|---|---|---|---|---|---|---|\n| 8B | 2B | 24 | 2048 | 8 | 2 | 16 | 128 | 5632 |\n",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 98
+  },
+  {
+    "type": "text",
+    "content": "The hyperparameters of JetMoE-8B are selected based on the common practice for the 1B transformer language model. We replace all self-attention and MLP layers in the transformer with MoA and MoE. Then, we set the same number of experts to 8 and top-k to 2 for every layer. Such that the model has approximately two times the computation compared to a 1B model. Following ST-MoE (Zoph et al., 2022), the weight for load balancing loss and z-loss is set to 0.01 and 0.001, respectively. Table 1 shows the key hyperparameters in JetMoE-8B.",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 99
+  },
+  {
+    "type": "text",
+    "content": "JetMoE-8B is trained with the AdamW optimizer (Loshchilov & Hutter, 2017) with a maximum learning rate of 5e-4 and a batch size of 4M tokens with sequence length of 4096. We employ the Warmup-Stable-Decay (WSD) learning rate schedule introduced in Hu et al. (2024). This learning rate scheduler is divided into three stages: the warmup stage (denoted by W, representing the number of steps at the end of the warmup stage), the stable training stage (denoted by S), and the annealing stage (denoted by D):",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 100
+  },
+  {
+    "type": "text",
+    "content": "lr(s) = { s/W * η, s < W; η, W < s < S; f(s-S) * η, S < s < S + D",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 101
+  },
+  {
+    "type": "text",
+    "content": "where 0 < f (s – S) ≤ 1 is a decreasing function of s, and η is the maximum learning rate. In our settings, the warmup stage lasts for 10 billion tokens, and the decay stage spans 250 billion tokens. The initial and final learning rates are set to 10% of the maximum learning rate. A weight decay of 0.1 and gradient clipping of 1.0 are applied during training.",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 102
+  },
+  {
+    "type": "header",
+    "content": "4.3 Training Data Mixture",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 103
+  },
+  {
+    "type": "text",
+    "content": "JetMoE-8B is trained on 1.25T tokens of primarily English data from web documents, mathematics, and code. Similar to the approach advocated in miniCPM (Hu et al., 2024) and Gemma (Team et al., 2024), we increase the weight of high-quality data during the learning rate decay phase. The training process is divided into two phases:",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 104
+  },
+  {
+    "type": "text",
+    "content": "Phase 1 (warmup and stable learning rate): The dataset includes RefinedWeb, Star- coder, The Pile, peS2o from Dolma, and OpenWebMath.",
+    "doc_id": "shen2024",
+    "page": 6,
+    "id": 105
+  },
+  {
+    "type": "text",
+    "content": "• Phase 2 (decay learning rate): We include additional high-quality data to further improve the model's performance.",
+    "doc_id": "shen2024",
+    "page": 7,
+    "id": 106
+  },
+  {
+    "type": "text",
+    "content": "The detailed data mixture can be found in Figure 2 and Table 2. It is important to note that given the limited computing budget available, our data mixture might not be ideal. However, it serves as a good starting point for training JetMoE-8B and can be further optimized in future iterations.",
+    "doc_id": "shen2024",
+    "page": 7,
+    "id": 107
+  },
+  {
+    "type": "figure",
+    "caption": "Figure 2: Pretraining data mixture",
+    "content": "The figure shows two pie charts representing the data mixture for Phase 1 and Phase 2 of pretraining. Phase 1 is dominated by peS2o (64%) and Starcoder Github (25%). Phase 2 is more balanced, with Refinedweb (40%) being the largest component, followed by Starcoder Github (19%). Other components in both phases include Arxiv, Open Web Math, Pile, Code SFT, Textbook, Wikipedia, NL SFT, and Github.",
+    "doc_id": "shen2024",
+    "page": 7,
+    "id": 108
+  },
+  {
+    "type": "table",
+    "caption": "Table 2: Detailed data mixture for Phase 2",
+    "content": "| Category | Dataset | Percentage |\n|---|---|---|\n| NL pretraining data | Refinedweb | 39.8% |\n|  | Pile_Wikipedia | 6.7% |\n|  | Pile_StackExchange | 4.8% |\n|  | Pile_arXiv | 1.0% |\n|  | Pile_remaining | 5.1% |\n|  | Dolma_peS2o | 1.0% |\n| NL SFT data | xP3x, OpenAssistant, OpenHermes UltraChat, Oasst-octopack | 7.3% |\n| Textbook | UltraTextbooks | 4.8% |\n| Code pretraining data | Starcoder Github | 19.6% |\n| Code SFT data | Magicoder-OSS, Magicoder-Evol Code-290k-ShareGPT, CommitPackFT Evol-Code Alpaca | 3.8% |\n| Math data | Open-web-math, algebraic-stack TemplateGSM, StackMathQA | 5.8% |",
+    "doc_id": "shen2024",
+    "page": 7,
+    "id": 109
+  },
+  {
+    "type": "header",
+    "content": "5 Model Alignment",
+    "doc_id": "shen2024",
+    "page": 7,
+    "id": 110
+  },
+  {
+    "type": "header",
+    "content": "5.1 Distilled Supervised Fine-Tuning (dSFT)",
+    "doc_id": "shen2024",
+    "page": 7,
+    "id": 111
+  },
+  {
+    "type": "text",
+    "content": "The dSFT process involves training a student language model for replying to user prompts, with data generated by a teacher model (such as GPT-4 or Claude) (Wang et al., 2022; Taori et al., 2023; Chiang et al., 2023; Tunstall et al., 2023b). The key steps are as follows:",
+    "doc_id": "shen2024",
+    "page": 7,
+    "id": 112
+  },
+  {
+    "type": "header",
+    "content": "1. Data Distillation:",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 113
+  },
+  {
+    "type": "text",
+    "content": "For a set of seed prompts {x}}=1, generate responses y using the teacher model πτ, and refine instructions to obtain C = {(xjyj)}}=1.",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 114
+  },
+  {
+    "type": "header",
+    "content": "2. Instruction Tuning:",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 115
+  },
+  {
+    "type": "text",
+    "content": "The student model AdSFT is trained by maximizing the likelihood of the responses given the instructions:",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 116
+  },
+  {
+    "type": "text",
+    "content": "πdSFT = arg max Σ log π(y|x). (14)\nπ\n(x,y)∈C",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 117
+  },
+  {
+    "type": "text",
+    "content": "Note that the expectation for the likelihood function is approximated by using the arithmetic mean over a batch of training samples.",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 118
+  },
+  {
+    "type": "header",
+    "content": "5.2 Distilled Direct Preference Optimization (dDPO)",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 119
+  },
+  {
+    "type": "text",
+    "content": "dDPO refines the dSFT model by incorporating preferences from an aligned teacher model into the training process. It optimizes a reward function that reflects these preferences, aiming to align the student model's outputs with the desired outcomes based on the static preference dataset.",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 120
+  },
+  {
+    "type": "header",
+    "content": "1. KL-Constrained Optimization:",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 121
+  },
+  {
+    "type": "text",
+    "content": "The foundation of dDPO lies in the KL-constrained optimization, which derives the optimal policy π⁺ that maximizes expected rewards while minimizing divergence from a baseline policy πο (Wang et al., 2023a):",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 122
+  },
+  {
+    "type": "text",
+    "content": "π(y|x) := arg max Ex~do [Ey∼π(·|x) [r(x, y)] – ηKL(π(·|x) ||πο(·|x))] (15)\nπ",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 123
+  },
+  {
+    "type": "text",
+    "content": "where η is a regularization parameter that balances maximizing the reward function r(x, y) and adhering to the baseline policy πο.",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 124
+  },
+  {
+    "type": "header",
+    "content": "2. Preference-Driven Reward Function:",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 125
+  },
+  {
+    "type": "text",
+    "content": "dDPO incorporates a reward function that reflects preferences from an aligned teacher model:",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 126
+  },
+  {
+    "type": "text",
+    "content": "r* (x,y) = η log (π*(y|x)\n) + η log Z(x), (16)\nπdSFT (y|x)",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 127
+  },
+  {
+    "type": "text",
+    "content": "quantifying the preference for producing response y given input x relative to the dSFT model's baseline probability. η scales the reward's influence, and Z(x) ensures normalization.",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 128
+  },
+  {
+    "type": "header",
+    "content": "3. Optimization Objective:",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 129
+  },
+  {
+    "type": "text",
+    "content": "The objective for aligning πο with the teacher model's preferences is:",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 130
+  },
+  {
+    "type": "text",
+    "content": "πρ\narg max\nΣ logσ η log\n- η log\n(17)\nπ\n(x,yw,Y1)∈D",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 131
+  },
+  {
+    "type": "text",
+    "content": "π(ζω|x)\nπdSFT (Ywx)\nπ(ζι|x)\nπdSFT (Y1/x)",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 132
+  },
+  {
+    "type": "text",
+    "content": "where D comprises instruction-response pairs, with yw and y₁ indicating preferred and less preferred responses respectively, scored by the teacher model.",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 133
+  },
+  {
+    "type": "text",
+    "content": "Offline DPO (Rafailov et al., 2023) directly optimizes language model policies using static preference data, providing stable learning and simpler tuning compared to Reinforcement learning from Human Feedback (RLHF) (Ouyang et al., 2022; Christiano et al., 2023). How- ever, it faces challenges with distribution shifts between the dataset and the evolving policy. Online and iterative DPO variants address this issue at the cost of increased computational complexity (Xu et al., 2023b; Guo et al., 2024b; Xiong et al., 2024).",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 134
+  },
+  {
+    "type": "header",
+    "content": "5.3 Alignment details",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 135
+  },
+  {
+    "type": "text",
+    "content": "Our alginment framework is based on Alignment Handbook (Tunstall et al., 2023a) using Pytorch 2 (He & Yu, 2023; Ansel et al., 2024) with DeepSpeed ZeRO-3 (Rajbhandari et al., 2020). We finetune the JetMoE-8B base model using dSFT on a combination of the following datasets: UltraChat 200k (Ding et al., 2023; Tunstall et al., 2023b), Airoboros-3.2 (Durbin,",
+    "doc_id": "shen2024",
+    "page": 8,
+    "id": 136
+  },
+  {
+    "type": "text",
+    "content": "2023), Code-Feedback (Zheng et al., 2024b), Orca-math-word-problems-200k (Mitra et al., 2024), SystemChat (abacusai, 2024), and Capybara (Daniele & Suphavadeeprasit, 2023). Chat template is the same as Zephyr-7b-beta. The key hyperparameters for dSFT are a learning rate of 2e-5 with an Adam optimizer, a batch size of 128, and 3 epochs.",
+    "doc_id": "shen2024",
+    "page": 9,
+    "id": 137
+  },
+  {
+    "type": "text",
+    "content": "We further finetune the JetMoE-8B-SFT model using dDPO on the UltraFeedback dataset (Cui et al., 2023), which contains binary preference labels indicating the preferred response between two options. The key hyperparameters for dDPO are a learning rate of 5e-7 with AdamW, a batch size of 128, and 1 epoch. This fine-tuning process results in the JetMoE-8B-Chat model. The entire alignment process takes 60 H100 GPU hours.",
+    "doc_id": "shen2024",
+    "page": 9,
+    "id": 138
+  },
+  {
+    "type": "header",
+    "content": "6 Evaluation",
+    "doc_id": "shen2024",
+    "page": 9,
+    "id": 139
+  },
+  {
+    "type": "table",
+    "caption": "Table 3: OpenLLM leaderboard and code benchmarks results from four different models.",
+    "content": "|                               | LLaMA2 | DeepseekMoE | Gemma | JetMoE |\n| :---------------------------- | :----- | :---------- | :---- | :----- |\n| # Total Params                | 7B     | 16B         | 2B    | 8B     |\n| # Activate Params             | 7B     | 2.8B        | 2B    | 2.2B   |\n| # Training tokens             | 2T     | 2T          | 2T    | 1.25T  |\n| ARC-challenge                 | 53.1   | 53.2        | 48.4  | 48.7   |\n| Hellaswag                     | 78.6   | 79.8        | 71.8  | 80.5   |\n| MMLU                          | 46.9   | 46.3        | 41.8  | 49.2   |\n| TruthfulQA                    | 38.8   | 36.1        | 33.1  | 41.7   |\n| WinoGrande                    | 74.0   | 73.7        | 66.3  | 70.2   |\n| GSM8k                         | 14.5   | 17.3        | 16.9  | 27.8   |\n| OpenLLM Leaderboard Avg.      | 51.0   | 51.1        | 46.4  | 53.0   |\n| MBPP (Pass@1)                 | 20.8   | 34.0        | 28.0  | 34.2   |\n| HumanEval (Pass@1)            | 12.8   | 25.0        | 24.4  | 14.6   |\n| All Avg.                      | 45.5   | 47.3        | 43.2  | 47.6   |",
+    "doc_id": "shen2024",
+    "page": 9,
+    "id": 140
+  },
+  {
+    "type": "text",
+    "content": "We measure JetMoE-8B's performance on tasks included in OpenLLM leaderboard² and from other domains, including physical reasoning (Bisk et al., 2020), social reasoning (Sap et al., 2019), question answering (Clark et al., 2019; Kwiatkowski et al., 2019), mathematics (Cobbe et al., 2021), commonsense reasoning (Sakaguchi et al., 2021), language modeling (Paperno et al., 2016), reading comprehension (Joshi et al., 2017), and more. For most benchmarks, we use the same evaluation methodology as in the OpenLLM leaderboard to be comparable to other models.. We compare JetMoE-8B models to several external open-source (OSS) LLMs, including Gemma, LLaMA2, DeepseekMoE.",
+    "doc_id": "shen2024",
+    "page": 9,
+    "id": 141
+  },
+  {
+    "type": "text",
+    "content": "In addition, we include HumanEval (Chen et al., 2021) and MBPP (Austin et al., 2021) to evaluate the code generation of the models. Utilizing the BigCode Evaluation Harness (Ben Allal et al., 2022), we follow recent work on Code LLMs (Rozière et al., 2024; Guo et al., 2024a) with greedy decoding, and report the mean pass@1 (mean success rate) for the two benchmarks.",
+    "doc_id": "shen2024",
+    "page": 9,
+    "id": 142
+  },
+  {
+    "type": "text",
+    "content": "Table 3 shows the OpenLLM leaderboard and code benchmarks results from four different models. JetMoE-8B outperforms Gemma, LLaMA2, and DeepseekMoE on the OpenLLM leaderboard, achieving the best scores in all tasks except ARC-challenge and WinoGrande. Additionally, JetMoE-8B obtains the highest MBPP scores in Python programming.",
+    "doc_id": "shen2024",
+    "page": 9,
+    "id": 143
+  },
+  {
+    "type": "text",
+    "content": "We also evaluated our model on MT-Bench (Zheng et al., 2023) with a strong LLM judge (gpt-4-0613 checkpoint). The temperature configuration, following the official FastChat implementation, is defined as follows: \"Writing\" and \"Roleplay” tasks have a temperature of 0.7, indicating higher creativity; \"Extraction\", \"Math\", \"Coding\", and \"Reasoning\" tasks",
+    "doc_id": "shen2024",
+    "page": 9,
+    "id": 144
+  },
+  {
+    "type": "text",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 10,
+    "id": 145
+  },
+  {
+    "type": "table",
+    "caption": "Table 4: MT-Bench score comparison of various models",
+    "content": "| Model | MT-Bench Score |\n|---|---|\n| GPT-4 | 9.014 |\n| GPT-3.5-turbo | 7.995 |\n| Claude-v1 | 7.923 |\n| JetMoE-8B-chat | 6.681 |\n| Llama-2-13b-chat | 6.650 |\n| Vicuna-13b-v1.3 | 6.413 |\n| Wizardlm-13b | 6.353 |\n| Llama-2-7b-chat | 6.269 |",
+    "doc_id": "shen2024",
+    "page": 10,
+    "id": 146
+  },
+  {
+    "type": "figure",
+    "caption": "Figure 3: MT-Bench radar figure",
+    "content": "The figure is a radar chart comparing models (GPT-3.5-turbo, Vicuna-13B, Llama-2-13b-chat, Llama-2-7b-chat, and JetMoE-8B-chat) across different skills: Writing, Roleplay, Reasoning, Math, Coding, Extraction, STEM, and Humanities. Each skill is represented as a spoke on the radar chart. JetMoE-8B-chat has a higher MT-Bench score compared to other models, especially in writing, humanities, and extraction. The JetMoE-8B-chat appears relatively weak in coding and extraction compared to GPT-3.5-turbo. The center of the chart ranges from 0 to 9, displaying the benchmark score.",
+    "doc_id": "shen2024",
+    "page": 10,
+    "id": 147
+  },
+  {
+    "type": "text",
+    "content": "have a temperature of 0.0, suggesting preciseness; and \"STEM\" and \"Humanities” have a temperature of 0.1, implying slightly more variability than 0.0 tasks.",
+    "doc_id": "shen2024",
+    "page": 10,
+    "id": 148
+  },
+  {
+    "type": "text",
+    "content": "JetMoE-8B-Chat achieves a higher MT-Bench score than Llama-2-13b-Chat after alignment, demonstrating its superior performance. However, as shown in Figure 3, JetMoE-8B-chat is relatively weak in coding and extraction compared to GPT-3.5-turbo. This might be due to the smaller model size leading to suboptimal reasoning capability in these tasks. Despite this limitation, JetMoE-8B-chat exhibits strong performance across various other dimensions, making it a competitive model in the open-source LLM landscape.",
+    "doc_id": "shen2024",
+    "page": 10,
+    "id": 149
+  },
+  {
+    "type": "header",
+    "content": "7 Limitation and Future Works",
+    "doc_id": "shen2024",
+    "page": 10,
+    "id": 150
+  },
+  {
+    "type": "text",
+    "content": "Due to the limited $100k budget, we can not afford any ablation study for the model architecture. The hyperparameters and data mixtures are also handpicked based on the empirical results from previous works (Shen et al., 2023; Zoph et al., 2022; Hu et al., 2024). In the future, it would be interesting to further study the actual contribution of different components to the final results.",
+    "doc_id": "shen2024",
+    "page": 10,
+    "id": 151
+  },
+  {
+    "type": "header",
+    "content": "8 Conclusion",
+    "doc_id": "shen2024",
+    "page": 10,
+    "id": 152
+  },
+  {
+    "type": "text",
+    "content": "We introduce JetMoE-8B, an open-source MoE model that achieves state-of-the-art perfor- mance among open-source models while maintaining high efficiency. By leveraging sparse",
+    "doc_id": "shen2024",
+    "page": 10,
+    "id": 153
+  },
+  {
+    "type": "header",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 154
+  },
+  {
+    "type": "text",
+    "content": "activation in both the attention and feed-forward layers, JetMoE-8B reduces computational costs while maintaining strong performance across a wide range of tasks.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 155
+  },
+  {
+    "type": "text",
+    "content": "Trained using a two-phase approach and a carefully curated mixture of open-source datasets, JetMoE-8B outperforms larger and more resource-intensive models on the OpenLLM Leader-board. In addition, JetMoE-8B-Chat demonstrates competitive performance compared to other open-source chatbots.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 156
+  },
+  {
+    "type": "text",
+    "content": "We provide detailed training parameters and data mixture information to encourage reproducibility and enable researchers to build upon our work. JetMoE-8B represents a significant step forward in the development of open-source, efficient, and high-performing language models, contributing to the democratization of advanced language technologies.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 157
+  },
+  {
+    "type": "header",
+    "content": "Acknowledgments",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 158
+  },
+  {
+    "type": "text",
+    "content": "We express our gratitude to Shengding Hu for his valuable advice on the Phase 2 data mixture. We also express our gratitude to Exabits for their assistance in setting up the GPU clusters, and to Lepton AI for their support in setting up the chat demo.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 159
+  },
+  {
+    "type": "header",
+    "content": "References",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 160
+  },
+  {
+    "type": "text",
+    "content": "abacusai. Systemchat, 2024. URL https://huggingface.co/datasets/abacusai/SystemChat.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 161
+  },
+  {
+    "type": "text",
+    "content": "ajibawa 2023. Code-290k-sharegpt, 2024. URL https://huggingface.co/datasets/ajibawa-2023/Code-290k-ShareGPT.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 162
+  },
+  {
+    "type": "text",
+    "content": "Jason Ansel, Edward Yang, Horace He, Natalia Gimelshein, Animesh Jain, Michael Vozne-sensky, Bin Bao, Peter Bell, David Berard, Evgeni Burovski, et al. Pytorch 2: Faster machine learning through dynamic python bytecode transformation and graph compilation, 2024.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 163
+  },
+  {
+    "type": "text",
+    "content": "Jacob Austin, Augustus Odena, Maxwell Nye, Maarten Bosma, Henryk Michalewski, David Dohan, Ellen Jiang, Carrie Cai, Michael Terry, Quoc Le, et al. Program synthesis with large language models. arXiv preprint arXiv:2108.07732, 2021.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 164
+  },
+  {
+    "type": "text",
+    "content": "Zhangir Azerbayev, Hailey Schoelkopf, Keiran Paster, Marco Dos Santos, Stephen McAleer, Albert Q. Jiang, Jia Deng, Stella Biderman, and Sean Welleck. Llemma: An open language model for mathematics, 2023.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 165
+  },
+  {
+    "type": "text",
+    "content": "Loubna Ben Allal, Niklas Muennighoff, Logesh Kumar Umapathi, Ben Lipkin, and Leandro von Werra. A framework for the evaluation of code generation models. https://github.com/bigcode-project/bigcode-evaluation-harness, 2022.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 166
+  },
+  {
+    "type": "text",
+    "content": "Stella Biderman, Hailey Schoelkopf, Quentin Anthony, Herbie Bradley, Kyle O'Brien, Eric Hallahan, Mohammad Aflah Khan, Shivanshu Purohit, USVSN Sai Prashanth, Edward Raff, et al. Pythia: A suite for analyzing large language models across training and scaling. arXiv preprint arXiv:2304.01373, 2023.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 167
+  },
+  {
+    "type": "text",
+    "content": "Yonatan Bisk, Rowan Zellers, Jianfeng Gao, Yejin Choi, et al. Piqa: Reasoning about physical commonsense in natural language. In Proceedings of the AAAI conference on artificial intelligence, volume 34, pp. 7432–7439, 2020.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 168
+  },
+  {
+    "type": "text",
+    "content": "Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, et al. Language models are few-shot learners. Advances in neural information processing systems, 33:1877-1901, 2020.",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 169
+  },
+  {
+    "type": "text",
+    "content": "Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, Alex Ray, Raul Puri, Gretchen Krueger, Michael Petrov, Heidy Khlaaf, Girish Sastry, Pamela Mishkin,",
+    "doc_id": "shen2024",
+    "page": 11,
+    "id": 170
+  },
+  {
+    "type": "header",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 171
+  },
+  {
+    "type": "text",
+    "content": "Brooke Chan, Scott Gray, Nick Ryder, Mikhail Pavlov, Alethea Power, Lukasz Kaiser, Mohammad Bavarian, Clemens Winter, Philippe Tillet, Felipe Petroski Such, Dave Cummings, Matthias Plappert, Fotios Chantzis, Elizabeth Barnes, Ariel Herbert-Voss, William Hebgen Guss, Alex Nichol, Alex Paino, Nikolas Tezak, Jie Tang, Igor Babuschkin, Suchir Balaji, Shantanu Jain, William Saunders, Christopher Hesse, Andrew N. Carr, Jan Leike, Josh Achiam, Vedant Misra, Evan Morikawa, Alec Radford, Matthew Knight, Miles Brundage, Mira Murati, Katie Mayer, Peter Welinder, Bob McGrew, Dario Amodei, Sam McCandlish, Ilya Sutskever, and Wojciech Zaremba. Evaluating large language models trained on code, 2021.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 172
+  },
+  {
+    "type": "text",
+    "content": "Wei-Lin Chiang, Zhuohan Li, Zi Lin, Ying Sheng, Zhanghao Wu, Hao Zhang, Lianmin Zheng, Siyuan Zhuang, Yonghao Zhuang, Joseph E. Gonzalez, Ion Stoica, and Eric P. Xing. Vicuna: An open-source chatbot impressing gpt-4 with 90%* chatgpt quality, March 2023. URL https://lmsys.org/blog/2023-03-30-vicuna/.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 173
+  },
+  {
+    "type": "text",
+    "content": "Paul Christiano, Jan Leike, Tom B. Brown, Miljan Martic, Shane Legg, and Dario Amodei. Deep reinforcement learning from human preferences, 2023.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 174
+  },
+  {
+    "type": "text",
+    "content": "Christopher Clark, Kenton Lee, Ming-Wei Chang, Tom Kwiatkowski, Michael Collins, and Kristina Toutanova. Boolq: Exploring the surprising difficulty of natural yes/no questions. arXiv preprint arXiv:1905.10044, 2019.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 175
+  },
+  {
+    "type": "text",
+    "content": "Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser, Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano, et al. Training verifiers to solve math word problems. arXiv preprint arXiv:2110.14168, 2021.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 176
+  },
+  {
+    "type": "text",
+    "content": "CogStack. OpenGPT: A framework for creating grounded instruction based datasets and training conversational domain expert Large Language Models (LLMs). https://github.com/CogStack/OpenGPT, 2023.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 177
+  },
+  {
+    "type": "text",
+    "content": "CollectiveCognition. Collective cognition chatgpt conversations, 2023. URL https://huggingface.co/datasets/CollectiveCognition/chats-data-2023-09-22.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 178
+  },
+  {
+    "type": "text",
+    "content": "Ganqu Cui, Lifan Yuan, Ning Ding, Guanming Yao, Wei Zhu, Yuan Ni, Guotong Xie, Zhiyuan Liu, and Maosong Sun. Ultrafeedback: Boosting language models with high-quality feedback, 2023.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 179
+  },
+  {
+    "type": "text",
+    "content": "Damai Dai, Chengqi Deng, Chenggang Zhao, RX Xu, Huazuo Gao, Deli Chen, Jiashi Li, Wangding Zeng, Xingkai Yu, Y Wu, et al. Deepseekmoe: Towards ultimate expert specialization in mixture-of-experts language models. arXiv preprint arXiv:2401.06066, 2024.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 180
+  },
+  {
+    "type": "text",
+    "content": "Luigi Daniele and Suphavadeeprasit. Amplify-instruct: Synthetically generated diverse multi-turn conversations for effecient llm training. arXiv preprint arXiv:(coming soon), 2023. URL https://huggingface.co/datasets/LDJnr/Capybara.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 181
+  },
+  {
+    "type": "text",
+    "content": "Databricks. Dbrx: Resources and code examples. https://github.com/databricks/dbrx, 2024.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 182
+  },
+  {
+    "type": "text",
+    "content": "Ning Ding, Yulin Chen, Bokai Xu, Yujia Qin, Zhi Zheng, Shengding Hu, Zhiyuan Liu, Maosong Sun, and Bowen Zhou. Enhancing chat language models by scaling high-quality instructional conversations, 2023.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 183
+  },
+  {
+    "type": "text",
+    "content": "Nan Du, Yanping Huang, Andrew M Dai, Simon Tong, Dmitry Lepikhin, Yuanzhong Xu, Maxim Krikun, Yanqi Zhou, Adams Wei Yu, Orhan Firat, et al. Glam: Efficient scaling of language models with mixture-of-experts. In International Conference on Machine Learning, pp. 5547-5569. PMLR, 2022.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 184
+  },
+  {
+    "type": "text",
+    "content": "Jon Durbin. airoboros: Customizable implementation of the self-instruct paper. https://github.com/jondurbin/airoboros, 2023.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 185
+  },
+  {
+    "type": "text",
+    "content": "William Fedus, Barret Zoph, and Noam Shazeer. Switch transformers: Scaling to trillion parameter models with simple and efficient sparsity, 2021.",
+    "doc_id": "shen2024",
+    "page": 12,
+    "id": 186
+  },
+  {
+    "type": "header",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 187
+  },
+  {
+    "type": "text",
+    "content": "Trevor Gale, Deepak Narayanan, Cliff Young, and Matei Zaharia. Megablocks: Efficient sparse training with mixture-of-experts. Proceedings of Machine Learning and Systems, 5, 2023.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 188
+  },
+  {
+    "type": "text",
+    "content": "Leo Gao, Stella Biderman, Sid Black, Laurence Golding, Travis Hoppe, Charles Foster, Jason Phang, Horace He, Anish Thite, Noa Nabeshima, et al. The pile: An 800gb dataset of diverse text for language modeling. arXiv preprint arXiv:2101.00027, 2020.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 189
+  },
+  {
+    "type": "text",
+    "content": "Xinyang Geng and Hao Liu. Openllama: An open reproduction of llama, May 2023. URL https://github.com/openlm-research/open_llama.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 190
+  },
+  {
+    "type": "text",
+    "content": "glaiveai. Glaive-code-assistant, 2023. URL https://huggingface.co/datasets/glaiveai/glaive-code-assistant.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 191
+  },
+  {
+    "type": "text",
+    "content": "Daya Guo, Qihao Zhu, Dejian Yang, Zhenda Xie, Kai Dong, Wentao Zhang, Guanting Chen, Xiao Bi, Y. Wu, Y. K. Li, Fuli Luo, Yingfei Xiong, and Wenfeng Liang. Deepseek-coder: When the large language model meets programming – the rise of code intelligence, 2024a.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 192
+  },
+  {
+    "type": "text",
+    "content": "Shangmin Guo, Biao Zhang, Tianlin Liu, Tianqi Liu, Misha Khalman, Felipe Llinares, Alexandre Rame, Thomas Mesnard, Yao Zhao, Bilal Piot, Johan Ferret, and Mathieu Blondel. Direct language model alignment from online ai feedback, 2024b.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 193
+  },
+  {
+    "type": "text",
+    "content": "Horace He and Shangdi Yu. Transcending runtime-memory tradeoffs in checkpointing by being fusion aware. Proceedings of Machine Learning and Systems, 5, 2023.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 194
+  },
+  {
+    "type": "text",
+    "content": "Shengding Hu, Yuge Tu, Xu Han, Chaoqun He, Ganqu Cui, Xiang Long, Zhi Zheng, Yewei Fang, Yuxiang Huang, Weilin Zhao, Xinrong Zhang, Zheng Leng Thai, Kaihuo Zhang, Chongyi Wang, Yuan Yao, Chenyang Zhao, Jie Zhou, Jie Cai, Zhongwu Zhai, Ning Ding, Chao Jia, Guoyang Zeng, Dahai Li, Zhiyuan Liu, and Maosong Sun. Minicpm: Unveiling the potential of small language models with scalable training strategies, 2024.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 195
+  },
+  {
+    "type": "text",
+    "content": "Albert Q Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford, Devendra Singh Chaplot, Diego de las Casas, Florian Bressand, Gianna Lengyel, Guillaume Lample, Lucile Saulnier, et al. Mistral 7b. arXiv preprint arXiv:2310.06825, 2023.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 196
+  },
+  {
+    "type": "text",
+    "content": "Albert Q. Jiang, Alexandre Sablayrolles, Antoine Roux, Arthur Mensch, Blanche Savary, Chris Bamford, Devendra Singh Chaplot, Diego de las Casas, Emma Bou Hanna, Florian Bressand, Gianna Lengyel, Guillaume Bour, Guillaume Lample, Lélio Renard Lavaud, Lucile Saulnier, Marie-Anne Lachaux, Pierre Stock, Sandeep Subramanian, Sophia Yang, Szymon Antoniak, Teven Le Scao, Théophile Gervet, Thibaut Lavril, Thomas Wang, Timothée Lacroix, and William El Sayed. Mixtral of experts, 2024.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 197
+  },
+  {
+    "type": "text",
+    "content": "Mandar Joshi, Eunsol Choi, Daniel S Weld, and Luke Zettlemoyer. Triviaqa: A large scale distantly supervised challenge dataset for reading comprehension. arXiv preprint arXiv:1705.03551, 2017.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 198
+  },
+  {
+    "type": "text",
+    "content": "Tom Kwiatkowski, Jennimaria Palomaki, Olivia Redfield, Michael Collins, Ankur Parikh, Chris Alberti, Danielle Epstein, Illia Polosukhin, Jacob Devlin, Kenton Lee, et al. Natural questions: a benchmark for question answering research. Transactions of the Association for Computational Linguistics, 7:453-466, 2019.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 199
+  },
+  {
+    "type": "text",
+    "content": "LAION-AI. Open-Assistant: A chat-based assistant that understands tasks, can interact with third-party systems, and retrieve information dynamically. https://github.com/LAION-AI/Open-Assistant, 2023.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 200
+  },
+  {
+    "type": "text",
+    "content": "Ariel N. Lee, Cole J. Hunter, and Nataniel Ruiz. Platypus: Quick, cheap, and powerful refinement of llms, 2024.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 201
+  },
+  {
+    "type": "text",
+    "content": "Guohao Li, Hasan Abed Al Kader Hammoud, Hani Itani, Dmitrii Khizbullin, and Bernard Ghanem. Camel: Communicative agents for \"mind\" exploration of large language model society. In Thirty-seventh Conference on Neural Information Processing Systems, 2023a.",
+    "doc_id": "shen2024",
+    "page": 13,
+    "id": 202
+  },
+  {
+    "type": "text",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 203
+  },
+  {
+    "type": "text",
+    "content": "Raymond Li, Loubna Ben Allal, Yangtian Zi, Niklas Muennighoff, Denis Kocetkov, Cheng- hao Mou, Marc Marone, Christopher Akiki, Jia Li, Jenny Chim, Qian Liu, Evgenii Zheltonozhskii, Terry Yue Zhuo, Thomas Wang, Olivier Dehaene, Mishig Davaadorj, Joel Lamy-Poirier, João Monteiro, Oleh Shliazhko, Nicolas Gontier, Nicholas Meade, Armel Zebaze, Ming-Ho Yee, Logesh Kumar Umapathi, Jian Zhu, Benjamin Lipkin, Muh- tasham Oblokulov, Zhiruo Wang, Rudra Murthy, Jason Stillerman, Siva Sankalp Patel, Dmitry Abulkhanov, Marco Zocca, Manan Dey, Zhihan Zhang, Nour Fahmy, Urvashi Bhattacharyya, Wenhao Yu, Swayam Singh, Sasha Luccioni, Paulo Villegas, Maxim Ku- nakov, Fedor Zhdanov, Manuel Romero, Tony Lee, Nadav Timor, Jennifer Ding, Claire Schlesinger, Hailey Schoelkopf, Jan Ebert, Tri Dao, Mayank Mishra, Alex Gu, Jennifer Robinson, Carolyn Jane Anderson, Brendan Dolan-Gavitt, Danish Contractor, Siva Reddy, Daniel Fried, Dzmitry Bahdanau, Yacine Jernite, Carlos Muñoz Ferrandis, Sean Hughes, Thomas Wolf, Arjun Guha, Leandro von Werra, and Harm de Vries. Starcoder: may the source be with you!, 2023b.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 204
+  },
+  {
+    "type": "text",
+    "content": "Wing Lian, Guan Wang, Bleys Goodson, Eugene Pentland, Austin Cook, Chanvichet Vong, and \"Teknium\". Slimorca: An open dataset of gpt-4 augmented flan reasoning traces, with verification, 2023. URL https://https://huggingface.co/Open-Orca/SlimOrca.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 205
+  },
+  {
+    "type": "text",
+    "content": "Hunter Lightman, Vineet Kosaraju, Yura Burda, Harri Edwards, Bowen Baker, Teddy Lee, Jan Leike, John Schulman, Ilya Sutskever, and Karl Cobbe. Let's verify step by step. preprint arXiv:2305.20050, 2023.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 206
+  },
+  {
+    "type": "text",
+    "content": "Im sys. FastChat: An open platform for training, serving, and evaluating large language model based chatbots. https://github.com/lm-sys/FastChat, 2023.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 207
+  },
+  {
+    "type": "text",
+    "content": "Locutusque. Ultratextbooks, 2024. URL https://huggingface.co/datasets/Locutusque/ UltraTextbooks.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 208
+  },
+  {
+    "type": "text",
+    "content": "Shayne Longpre, Le Hou, Tu Vu, Albert Webson, Hyung Won Chung, Yi Tay, Denny Zhou, Quoc V. Le, Barret Zoph, Jason Wei, and Adam Roberts. The flan collection: Designing data and methods for effective instruction tuning, 2023.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 209
+  },
+  {
+    "type": "text",
+    "content": "Ilya Loshchilov and Frank Hutter. Decoupled weight decay regularization. arXiv preprint arXiv:1711.05101, 2017.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 210
+  },
+  {
+    "type": "text",
+    "content": "Anton Lozhkov, Raymond Li, Loubna Ben Allal, Federico Cassano, Joel Lamy-Poirier, Nouamane Tazi, Ao Tang, Dmytro Pykhtar, Jiawei Liu, Yuxiang Wei, et al. Starcoder 2 and the stack v2: The next generation. arXiv preprint arXiv:2402.19173, 2024.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 211
+  },
+  {
+    "type": "text",
+    "content": "Ziyang Luo, Can Xu, Pu Zhao, Qingfeng Sun, Xiubo Geng, Wenxiang Hu, Chongyang Tao, Jing Ma, Qingwei Lin, and Daxin Jiang. Wizardcoder: Empowering code large language models with evol-instruct, 2023.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 212
+  },
+  {
+    "type": "text",
+    "content": "Arindam Mitra, Hamed Khanpour, Corby Rosset, and Ahmed Awadallah. Orca-math: Unlocking the potential of slms in grade school math, 2024.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 213
+  },
+  {
+    "type": "text",
+    "content": "Niklas Muennighoff, Qian Liu, Armel Zebaze, Qinkai Zheng, Binyuan Hui, Terry Yue Zhuo, Swayam Singh, Xiangru Tang, Leandro von Werra, and Shayne Longpre. Octopack: Instruction tuning code large language models. arXiv preprint arXiv:2308.07124, 2023a.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 214
+  },
+  {
+    "type": "text",
+    "content": "Niklas Muennighoff, Thomas Wang, Lintang Sutawika, Adam Roberts, Stella Biderman, Teven Le Scao, M Saiful Bari, Sheng Shen, Zheng-Xin Yong, Hailey Schoelkopf, Xian- gru Tang, Dragomir Radev, Alham Fikri Aji, Khalid Almubarak, Samuel Albanie, Zaid Alyafeai, Albert Webson, Edward Raff, and Colin Raffel. Crosslingual generalization through multitask finetuning, 2023b.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 215
+  },
+  {
+    "type": "text",
+    "content": "Subhabrata Mukherjee, Arindam Mitra, Ganesh Jawahar, Sahaj Agarwal, Hamid Palangi, and Ahmed Awadallah. Orca: Progressive learning from complex explanation traces of gpt-4, 2023.",
+    "doc_id": "shen2024",
+    "page": 14,
+    "id": 216
+  },
+  {
+    "type": "header",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 217
+  },
+  {
+    "type": "text",
+    "content": "Deepak Narayanan, Mohammad Shoeybi, Jared Casper, Patrick LeGresley, Mostofa Pat-wary, Vijay Korthikanti, Dmitri Vainbrand, Prethvi Kashinkunti, Julie Bernauer, Bryan Catanzaro, et al. Efficient large-scale language model training on gpu clusters using megatron-lm. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis, pp. 1-15, 2021.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 218
+  },
+  {
+    "type": "text",
+    "content": "Long Ouyang, Jeff Wu, Xu Jiang, Diogo Almeida, Carroll L. Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, John Schulman, Jacob Hilton, Fraser Kelton, Luke Miller, Maddie Simens, Amanda Askell, Peter Welinder, Paul Christiano, Jan Leike, and Ryan Lowe. Training language models to follow instructions with human feedback, 2022.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 219
+  },
+  {
+    "type": "text",
+    "content": "Bowen Pan, Yikang Shen, Haokun Liu, Mayank Mishra, Gaoyuan Zhang, Aude Oliva, Colin Raffel, and Rameswar Panda. Dense training, sparse inference: Rethinking training of mixture-of-experts language models, 2024.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 220
+  },
+  {
+    "type": "text",
+    "content": "Denis Paperno, Germán Kruszewski, Angeliki Lazaridou, Quan Ngoc Pham, Raffaella Bernardi, Sandro Pezzelle, Marco Baroni, Gemma Boleda, and Raquel Fernández. The lambada dataset: Word prediction requiring a broad discourse context. arXiv preprint arXiv:1606.06031, 2016.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 221
+  },
+  {
+    "type": "text",
+    "content": "Keiran Paster, Marco Dos Santos, Zhangir Azerbayev, and Jimmy Ba. Openwebmath: An open dataset of high-quality mathematical web text, 2023.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 222
+  },
+  {
+    "type": "text",
+    "content": "Guilherme Penedo, Quentin Malartic, Daniel Hesslow, Ruxandra Cojocaru, Alessandro Cappelli, Hamza Alobeidli, Baptiste Pannier, Ebtesam Almazrouei, and Julien Launay. The refinedweb dataset for falcon llm: outperforming curated corpora with web data, and web data only. arXiv preprint arXiv:2306.01116, 2023.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 223
+  },
+  {
+    "type": "text",
+    "content": "Baolin Peng, Chunyuan Li, Pengcheng He, Michel Galley, and Jianfeng Gao. Instruction tuning with gpt-4. arXiv preprint arXiv:2304.03277, 2023.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 224
+  },
+  {
+    "type": "text",
+    "content": "Rafael Rafailov, Archit Sharma, Eric Mitchell, Stefano Ermon, Christopher D. Manning, and Chelsea Finn. Direct preference optimization: Your language model is secretly a reward model, 2023.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 225
+  },
+  {
+    "type": "text",
+    "content": "Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, and Peter J. Liu. Exploring the limits of transfer learning with a unified text-to-text transformer. Journal of Machine Learning Research, 21(140):1–67, 2020. URL http://jmlr.org/papers/v21/20-074.html.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 226
+  },
+  {
+    "type": "text",
+    "content": "Samyam Rajbhandari, Jeff Rasley, Olatunji Ruwase, and Yuxiong He. Zero: Memory optimizations toward training trillion parameter models, 2020.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 227
+  },
+  {
+    "type": "text",
+    "content": "Baptiste Rozière, Jonas Gehring, Fabian Gloeckle, Sten Sootla, Itai Gat, Xiaoqing Ellen Tan, Yossi Adi, Jingyu Liu, Romain Sauvestre, Tal Remez, Jérémy Rapin, Artyom Kozhevnikov, Ivan Evtimov, Joanna Bitton, Manish Bhatt, Cristian Canton Ferrer, Aaron Grattafiori, Wenhan Xiong, Alexandre Défossez, Jade Copet, Faisal Azhar, Hugo Touvron, Louis Martin, Nicolas Usunier, Thomas Scialom, and Gabriel Synnaeve. Code llama: Open foundation models for code, 2024.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 228
+  },
+  {
+    "type": "text",
+    "content": "Keisuke Sakaguchi, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. Winogrande: An adversarial winograd schema challenge at scale. Communications of the ACM, 64(9):99–106, 2021.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 229
+  },
+  {
+    "type": "text",
+    "content": "Maarten Sap, Hannah Rashkin, Derek Chen, Ronan LeBras, and Yejin Choi. Socialiqa: Commonsense reasoning about social interactions. arXiv preprint arXiv:1904.09728, 2019.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 230
+  },
+  {
+    "type": "text",
+    "content": "Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, Andy Davis, Quoc Le, Geoffrey Hinton, and Jeff Dean. Outrageously large neural networks: The sparsely-gated mixture-of-experts layer. arXiv preprint arXiv:1701.06538, 2017.",
+    "doc_id": "shen2024",
+    "page": 15,
+    "id": 231
+  },
+  {
+    "type": "text",
+    "content": "JetMoE",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 232
+  },
+  {
+    "type": "text",
+    "content": "Yikang Shen, Zheyu Zhang, Tianyou Cao, Shawn Tan, Zhenfang Chen, and Chuang Gan. Moduleformer: Learning modular large language models from uncurated data. arXiv preprint arXiv:2306.04640, 2023.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 233
+  },
+  {
+    "type": "text",
+    "content": "Mohammad Shoeybi, Mostofa Patwary, Raul Puri, Patrick LeGresley, Jared Casper, and Bryan Catanzaro. Megatron-lm: Training multi-billion parameter language models using model parallelism. arXiv preprint arXiv:1909.08053, 2019.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 234
+  },
+  {
+    "type": "text",
+    "content": "Qingyi Si, Tong Wang, Zheng Lin, Xu Zhang, Yanan Cao, and Weiping Wang. An empirical study of instruction-tuning large language models in chinese, 2023.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 235
+  },
+  {
+    "type": "text",
+    "content": "Luca Soldaini, Rodney Kinney, Akshita Bhagia, Dustin Schwenk, David Atkinson, Russell Authur, Ben Bogin, Khyathi Chandu, Jennifer Dumas, Yanai Elazar, Valentin Hofmann, Ananya Harsh Jha, Sachin Kumar, Li Lucy, Xinxi Lyu, Nathan Lambert, Ian Magnusson, Jacob Morrison, Niklas Muennighoff, Aakanksha Naik, Crystal Nam, Matthew E. Peters, Abhilasha Ravichander, Kyle Richardson, Zejiang Shen, Emma Strubell, Nishant Subramani, Oyvind Tafjord, Pete Walsh, Luke Zettlemoyer, Noah A. Smith, Hannaneh Hajishirzi, Iz Beltagy, Dirk Groeneveld, Jesse Dodge, and Kyle Lo. Dolma: an open corpus of three trillion tokens for language model pretraining research, 2024.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 236
+  },
+  {
+    "type": "text",
+    "content": "Jianlin Su, Murtadha Ahmed, Yu Lu, Shengfeng Pan, Wen Bo, and Yunfeng Liu. Roformer: Enhanced transformer with rotary position embedding. Neurocomputing, 568:127063, 2024.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 237
+  },
+  {
+    "type": "text",
+    "content": "Rohan Taori, Ishaan Gulrajani, Tianyi Zhang, Yann Dubois, Xuechen Li, Carlos Guestrin, Percy Liang, and Tatsunori B. Hashimoto. Stanford alpaca: An instruction-following llama model. https://github.com/tatsu-lab/stanford_alpaca, 2023.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 238
+  },
+  {
+    "type": "text",
+    "content": "Gemma Team, Thomas Mesnard, Cassidy Hardin, Robert Dadashi, Surya Bhupatiraju, Shreya Pathak, Laurent Sifre, Morgane Rivière, Mihir Sanjay Kale, Juliette Love, et al. Gemma: Open models based on gemini research and technology. arXiv preprint arXiv:2403.08295, 2024.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 239
+  },
+  {
+    "type": "text",
+    "content": "Teknium. Openhermes 2.5: An open dataset of synthetic data for generalist Ilm assistants, 2023. URL https://huggingface.co/datasets/teknium/OpenHermes-2.5.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 240
+  },
+  {
+    "type": "text",
+    "content": "Teknium1. GPTeacher: A collection of modular datasets generated by GPT-4. https: //github.com/teknium1/GPTeacher, 2023.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 241
+  },
+  {
+    "type": "text",
+    "content": "Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet, Marie-Anne Lachaux, Timothée Lacroix, Baptiste Rozière, Naman Goyal, Eric Hambro, Faisal Azhar, et al. Llama: Open and efficient foundation language models. arXiv preprint arXiv:2302.13971, 2023.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 242
+  },
+  {
+    "type": "text",
+    "content": "Lewis Tunstall, Edward Beeching, Nathan Lambert, Nazneen Rajani, Shengyi Huang, Kashif Rasul, Alexander M. Rush, and Thomas Wolf. The alignment handbook. https: //github.com/huggingface/alignment-handbook, 2023a.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 243
+  },
+  {
+    "type": "text",
+    "content": "Lewis Tunstall, Edward Beeching, Nathan Lambert, Nazneen Rajani, Kashif Rasul, Younes Belkada, Shengyi Huang, Leandro von Werra, Clémentine Fourrier, Nathan Habib, Nathan Sarrazin, Omar Sanseviero, Alexander M. Rush, and Thomas Wolf. Zephyr: Direct distillation of Im alignment, 2023b.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 244
+  },
+  {
+    "type": "text",
+    "content": "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems, 30, 2017.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 245
+  },
+  {
+    "type": "text",
+    "content": "Chaoqi Wang, Yibo Jiang, Chenghao Yang, Han Liu, and Yuxin Chen. Beyond reverse kl: Generalizing direct preference optimization with diverse divergence constraints, 2023a.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 246
+  },
+  {
+    "type": "text",
+    "content": "Xiaoxuan Wang, Ziniu Hu, Pan Lu, Yanqiao Zhu, Jieyu Zhang, Satyen Subramaniam, Arjun R. Loomba, Shichang Zhang, Yizhou Sun, and Wei Wang. Scibench: Evaluating college-level scientific problem-solving abilities of large language models, 2023b.",
+    "doc_id": "shen2024",
+    "page": 16,
+    "id": 247
+  }
+]
