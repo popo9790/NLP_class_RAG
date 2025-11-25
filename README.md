@@ -18,7 +18,7 @@ python download_nltk_data.py
 
 ---
 
-## 🚀 使用方法
+## 使用方法
 
 ### 1. 向量搜尋 (Vector Search)
 
