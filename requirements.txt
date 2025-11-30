@@ -1,9 +1,9 @@
-Flask
-flask-ipfilter
-matplotlib
-numpy
-protobuf
-requests
-sentence-transformers
-sentencepiece
+torch
 transformers
+accelerate
+qwen-vl-utils
+pymupdf
+pillow
+json_repair
+sentence-transformers
+tqdm
