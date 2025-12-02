@@ -26,6 +26,7 @@ class VectorSearchEngine:
         self.dimension = self.model.get_sentence_embedding_dimension()
         self.index: Optional[faiss.Index] = None
         self.documents: List[str] = []
+        self.urls: List[str] = []
         self.document_ids: List[int] = []
         print("模型初始化完成。")
 
@@ -34,6 +35,7 @@ class VectorSearchEngine:
         print(f"從 {json_path} 載入並過濾文件...")
         documents = []
         ids = []
+        urls = []
         seen_content = set()
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -43,17 +45,18 @@ class VectorSearchEngine:
                 content = item["content"]
                 if content not in seen_content:
                     documents.append(content)
-                    ids.append(item.get('id'))
+                    ids.append(item.get('doc_id'))
+                    urls.append(item.get('url', ''))
                     seen_content.add(content)
         print(f"成功載入 {len(documents)} 個不重複的文件片段。")
-        return documents, ids
+        return documents, ids, urls
 
     def build_from_json(self, json_path: str):
         """
         從 JSON 檔案建立完整的 FAISS 索引。
         :param json_path: JSON 檔案的路徑。
         """
-        self.documents, self.document_ids = self._load_and_filter_documents(json_path)
+        self.documents, self.document_ids, self.urls = self._load_and_filter_documents(json_path)
         if not self.documents:
             print("錯誤: 文件中沒有找到可處理的內容。")
             return
@@ -113,7 +116,7 @@ class VectorSearchEngine:
             print("索引為空，無法執行搜尋。")
             return []
 
-        print(f"\n執行搜尋: \"{query}\"")
+        # print(f"\n執行搜尋: \"{query}\"")
         query_embedding = self.model.encode([query])
         distances, indices = self.index.search(np.array(query_embedding), k)
 
@@ -124,14 +127,15 @@ class VectorSearchEngine:
                     result = {
                         "id": self.document_ids[doc_index],
                         "score": float(distances[0][i]),
-                        "text": self.documents[doc_index]
+                        "text": self.documents[doc_index],
+                        "url": self.urls[doc_index]
                     }
                     results.append(result)
         return results
 
 def main():
     """主執行函數，展示如何使用 VectorSearchEngine 類別。"""
-    json_file_path = "./shen2024.json"
+    json_file_path = "./corpus_text_only.json"
     if not os.path.exists(json_file_path):
         print(f"錯誤: 找不到檔案 '{json_file_path}'")
         return
