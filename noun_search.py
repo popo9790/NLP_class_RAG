@@ -9,16 +9,23 @@ try:
     # 檢查 'punkt' (用於分詞) 和 'averaged_perceptron_tagger' (用於詞性標註) 是否存在
     try:
         nltk.data.find('tokenizers/punkt')
-    except nltk.downloader.DownloadError:
+    except LookupError:
         print("NLTK 'punkt' tokenizer not found. Downloading...")
         nltk.download('punkt', quiet=True)
         print("'punkt' downloaded.")
     try:
         nltk.data.find('taggers/averaged_perceptron_tagger')
-    except nltk.downloader.DownloadError:
+    except LookupError:
         print("NLTK 'averaged_perceptron_tagger' not found. Downloading...")
         nltk.download('averaged_perceptron_tagger', quiet=True)
         print("'averaged_perceptron_tagger' downloaded.")
+
+    try:
+        nltk.data.find('averaged_perceptron_tagger_eng')
+    except LookupError:
+        print("NLTK 'averaged_perceptron_tagger_eng' not found. Downloading...")
+        nltk.download('averaged_perceptron_tagger_eng', quiet=True)
+        print("'averaged_perceptron_tagger_eng' downloaded.")
 except ImportError:
     print("錯誤: NLTK 套件未安裝。")
     print("請執行: pip install nltk")
@@ -75,9 +82,9 @@ class NounSearchEngine:
             raise TypeError("JSON 檔案的根結構必須是一個列表。")
 
         for item in data:
-            # 確保物件是字典且包含 'id' 和 'content'
-            if isinstance(item, dict) and 'id' in item and 'content' in item:
-                doc_id = item['id']
+            # 確保物件是字典且包含 'doc_id' 和 'content'
+            if isinstance(item, dict) and 'doc_id' in item and 'content' in item:
+                doc_id = item['doc_id']
                 content = item['content']
                 
                 if not content or not content.strip():
@@ -124,7 +131,7 @@ class NounSearchEngine:
         for doc_id, score in sorted_docs[:top_k]:
             results.append({
                 "id": doc_id,
-                "match_score": score, # 匹配到的名詞數量
+                "score": score, # 匹配到的名詞數量
                 "content": self.documents.get(doc_id, "內容遺失")
             })
             
@@ -132,7 +139,7 @@ class NounSearchEngine:
 
 def main():
     """主執行函數，展示如何使用 NounSearchEngine 類別。"""
-    json_file_path = "/home/eson/graph/shen2024.json"
+    json_file_path = "corpus_text_only.json"
     
     try:
         # 1. 建立引擎實例，它會自動讀取檔案並建立索引
